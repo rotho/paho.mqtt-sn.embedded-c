@@ -54,7 +54,7 @@ void ClientRecvTask::run()
 	Event* ev = 0;
 	Client* client = 0;
 	char buf[128];
-
+	WRITELOG("%s Running ClientRecvTask.\n", currentDateTime());
 	while (true)
 	{
 		MQTTSNPacket* packet = new MQTTSNPacket();

@@ -14,7 +14,8 @@ SRCDIR := src
 SUBDIR := ../MQTTSNPacket/src
 
 OS := linux
-SENSORNET := udp
+#SENSORNET := udp
+SENSORNET := xbee
 TEST := tests
 
 CPPSRCS :=  \

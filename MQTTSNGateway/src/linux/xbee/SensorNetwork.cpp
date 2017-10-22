@@ -215,7 +215,7 @@ int XBee:: unicast(const uint8_t* payload, uint16_t payloadLen, SensorNetAddress
 int XBee::recv(uint8_t* buf, uint16_t bufLen, SensorNetAddress* clientAddr)
 {
 	uint8_t data[128];
-	int len;
+	int len = 0;
 
 	while ( true )
 	{
@@ -231,6 +231,14 @@ int XBee::recv(uint8_t* buf, uint16_t bufLen, SensorNetAddress* clientAddr)
 				memcpy( buf, data + 12, len);
 				return len;
 			}
+			else if ( data[0] == API_RX_64_RESPONSE)
+			{
+				memcpy(clientAddr->_address64, data + 1, 8);
+				//memcpy(clientAddr->_address16, data + 9, 2); // TODO: write an extra one for 16 bit
+				len -= 9;
+				memcpy( buf, data + 9, len);
+				return len;
+			}
 			else if ( data[0] == API_XMITSTATUS )
 			{
 				_respCd = data[5];
@@ -242,7 +250,7 @@ int XBee::recv(uint8_t* buf, uint16_t bufLen, SensorNetAddress* clientAddr)
 }
 
 int XBee::readApiFrame(uint8_t* recvData){
-	uint8_t buf;
+	uint8_t buf = 0;
 	uint8_t pos = 0;
 	uint8_t checksum = 0;
 	uint8_t len = 0;
@@ -303,9 +311,12 @@ errexit:
 }
 
 int XBee::send(const uint8_t* payload, uint8_t pLen, SensorNetAddress* addr){
+#ifdef XBEE_ZB
 	D_NWSTACK("\r\n===> Send:    ");
     uint8_t checksum = 0;
     _respCd = -1;
+
+
 
     _serialPort->send(START_BYTE);
     send(0x00);              // Message Length
@@ -359,6 +370,59 @@ int XBee::send(const uint8_t* payload, uint8_t pLen, SensorNetAddress* addr){
     	return -1;
     }
     return (int)pLen;
+#else
+	D_NWSTACK("\r\n===> Send:    ");
+    uint8_t checksum = 0;
+    _respCd = -1;
+
+
+
+    _serialPort->send(START_BYTE);
+    send(0x00);              // Message Length
+    send(14 + pLen);         // Message Length
+
+    _serialPort->send(API_TX_64_REQUEST); // Transmit Request API
+    checksum += API_TX_64_REQUEST;
+
+    if (_frameId++ == 0x00 ) // Frame ID
+	{
+    	_frameId = 1;
+	}
+    send(_frameId);
+    checksum += _frameId;
+
+	for ( int i = 0; i < 8; i++)    // Address64
+	{
+		send(addr->_address64[i]);
+		checksum += addr->_address64[i];
+	}
+
+    send(0x00);   // Option
+    checksum += 0x00;
+
+    D_NWSTACK("\r\n     Payload: ");
+
+    for ( uint8_t i = 0; i < pLen; i++ ){
+        send(payload[i]);     // Payload
+        checksum += payload[i];
+    }
+
+    checksum = 0xff - checksum;
+    D_NWSTACK("   checksum  ");
+    send(checksum);
+    D_NWSTACK("\r\n");
+
+    /* wait Txim Status 0x8B */
+    _sem.timedwait(XMIT_STATUS_TIME_OVER);
+
+    if ( _respCd || _frameId != _respId )
+    {
+    	 D_NWSTACK(" frameId = %02x  Not Acknowleged\r\n", _frameId);
+    	return -1;
+    }
+    return (int)pLen;
+    
+#endif
 }
 
 void XBee::send(uint8_t c)
@@ -396,7 +460,7 @@ void XBee::setApiMode(uint8_t mode)
 SerialPort::SerialPort()
 {
 	_tio.c_iflag = IGNBRK | IGNPAR;
-	_tio.c_cflag = CS8 | CLOCAL | CRTSCTS;
+	_tio.c_cflag = CS8 | CLOCAL | CRTSCTS | CREAD;
 	_tio.c_cc[VINTR] = 0;
 	_tio.c_cc[VTIME] = 10;   // 1 sec.
 	_tio.c_cc[VMIN] = 1;
@@ -417,6 +481,7 @@ int SerialPort::open(char* devName, unsigned int baudrate, bool parity,
 	_fd = ::open(devName, flg);
 	if (_fd < 0)
 	{
+	    	D_NWSTACK( "\r\nSerialPort error (_fd < 0)\r\n");
 		return _fd;
 	}
 
@@ -433,6 +498,7 @@ int SerialPort::open(char* devName, unsigned int baudrate, bool parity,
 	{
 		return errno;
 	}
+	D_NWSTACK( "\r\nSerialPort opened\r\n");
 	return tcsetattr(_fd, TCSANOW, &_tio);
 }
 
@@ -451,11 +517,17 @@ bool SerialPort::send(unsigned char b)
 
 bool SerialPort::recv(unsigned char* buf)
 {
-	if (read(_fd, buf, 1) == 0)
+	int rx_bytes = read(_fd, buf, 1);
+	if (rx_bytes < 0 ) // read error
+	{
+		D_NWSTACK( "\r\n == Serial port read error." );
+		return false;
+	}
+	if (rx_bytes == 0) // no data
 	{
 		return false;
 	}
-	else
+	else // new byte
 	{
 		D_NWSTACK( " %02x",buf[0] );
 		return true;

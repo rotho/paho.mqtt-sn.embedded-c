@@ -34,7 +34,11 @@ namespace MQTTSNGW
 #endif
 
 #define API_XMITREQUEST          0x10
+#define API_TX_64_REQUEST        0x00
+#define API_TX_16_REQUEST        0x01
 #define API_RESPONSE             0x90
+#define API_RX_64_RESPONSE       0x80
+#define API_RX_16_RESPONSE       0x81
 #define API_MODEMSTATUS          0x8A
 #define API_XMITSTATUS           0x8B
 
