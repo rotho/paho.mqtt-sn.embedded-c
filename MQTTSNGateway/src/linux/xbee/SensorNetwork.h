@@ -11,7 +11,7 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *    Tomoaki Yamaguchi - initial API and implementation 
+ *    Tomoaki Yamaguchi - initial API and implementation
  **************************************************************************************/
 #ifndef SENSORNETWORKX_H_
 #define SENSORNETWORKX_H_
@@ -41,6 +41,7 @@ namespace MQTTSNGW
 #define API_RX_16_RESPONSE       0x81
 #define API_MODEMSTATUS          0x8A
 #define API_XMITSTATUS           0x8B
+#define API_TX_STATUS_RESPONSE   0x89
 
 #define XMIT_STATUS_TIME_OVER    5000
 

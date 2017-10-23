@@ -11,7 +11,7 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *    Tomoaki Yamaguchi - initial API and implementation 
+ *    Tomoaki Yamaguchi - initial API and implementation
  **************************************************************************************/
 
 #include <stdio.h>
@@ -245,6 +245,12 @@ int XBee::recv(uint8_t* buf, uint16_t bufLen, SensorNetAddress* clientAddr)
 				_respId = data[1];
 				_sem.post();
 			}
+			else if (data[0] == API_TX_STATUS_RESPONSE)
+			{
+				_respCd = data[2];
+				_respId = data[1];
+				_sem.post();
+			}
 		}
 	}
 }
@@ -379,7 +385,7 @@ int XBee::send(const uint8_t* payload, uint8_t pLen, SensorNetAddress* addr){
 
     _serialPort->send(START_BYTE);
     send(0x00);              // Message Length
-    send(14 + pLen);         // Message Length
+    send(11 + pLen);         // Message Length
 
     _serialPort->send(API_TX_64_REQUEST); // Transmit Request API
     checksum += API_TX_64_REQUEST;
@@ -421,7 +427,7 @@ int XBee::send(const uint8_t* payload, uint8_t pLen, SensorNetAddress* addr){
     	return -1;
     }
     return (int)pLen;
-    
+
 #endif
 }
 
@@ -538,4 +544,3 @@ void SerialPort::flush(void)
 {
 	tcsetattr(_fd, TCSAFLUSH, &_tio);
 }
-
