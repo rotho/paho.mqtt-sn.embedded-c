@@ -234,19 +234,20 @@ int XBee::recv(uint8_t* buf, uint16_t bufLen, SensorNetAddress* clientAddr)
 			else if ( data[0] == API_RX_64_RESPONSE)
 			{
 				memcpy(clientAddr->_address64, data + 1, 8);
-				//memcpy(clientAddr->_address16, data + 9, 2); // TODO: write an extra one for 16 bit
-				len -= 9;
-				memcpy( buf, data + 9, len);
+				len -= 11;
+				memcpy( buf, data + 11, len);
 				return len;
 			}
 			else if ( data[0] == API_XMITSTATUS )
 			{
+				D_NWSTACK("\r\nGot API_XMITSTATUS ");
 				_respCd = data[5];
 				_respId = data[1];
 				_sem.post();
 			}
 			else if (data[0] == API_TX_STATUS_RESPONSE)
 			{
+				D_NWSTACK("\r\nGOT API_TX_STATUS_RESPONSE");
 				_respCd = data[2];
 				_respId = data[1];
 				_sem.post();
