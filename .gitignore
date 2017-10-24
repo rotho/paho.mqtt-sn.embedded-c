@@ -5,3 +5,6 @@
 *.pyc
 /doc/MQTTSNClient/
 /doc/MQTTSNPacket/
+MQTTSNGateway/Build/
+MQTTSNGateway/MQTTSNPacket/
+MQTTSNGateway/src/linux/xbee/SensorNetwork.h.gch
